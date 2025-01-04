@@ -8,6 +8,36 @@ class EyeGestures{
         const calib_cursor = document.createElement('div');
         calib_cursor.id = "calib_cursor";
         calib_cursor.style.display = "None";
+
+        const logoDiv = document.createElement('div');
+        logoDiv.id = "logoDivEyeGestures";
+        logoDiv.style.width = "200px";
+        logoDiv.style.height = "60px";
+        logoDiv.style.position = "fixed";
+        logoDiv.style.bottom = "10px";
+        logoDiv.style.right = "10px";
+        logoDiv.style.zIndex = "9999";
+        logoDiv.style.background = "black";
+        logoDiv.style.borderRadius = "10px";
+        logoDiv.style.display = "none";
+        logoDiv.onclick = function() {
+            window.location.href = "https://eyegestures.com/";
+        };
+        const logo = document.createElement('div');
+        logo.style.margin = "10px";
+        logo.innerHTML = '<img src="../src/logoEyeGesturesNew.png" alt="Logo" width="120px">';
+        logoDiv.appendChild(logo);
+        const canvas = document.createElement('canvas');
+        canvas.id = "output_canvas";
+        canvas.width = "50"; 
+        canvas.height = "50";
+        canvas.style.margin = "5px";
+        canvas.style.borderRadius = "10px";
+        canvas.style.border = "none";
+        canvas.style.background = "#222";
+        logoDiv.appendChild(canvas);
+        document.body.appendChild(logoDiv);
+        
         document.body.appendChild(calib_cursor);
         
         this.calibrator = new Calibrator;
@@ -131,7 +161,7 @@ class EyeGestures{
                 const canvas = document.getElementById("output_canvas");
                 const ctx = canvas.getContext("2d");
                 try {
-                    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+                    // ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
                     ctx.save();
                     ctx.scale(-1, 1); // Flip horizontally (invert x-axis)
                     ctx.translate(-canvas.width, 0); // Adjust translation to ensure the image is drawn correctly
@@ -151,6 +181,7 @@ class EyeGestures{
     }
 
     onFaceMeshResults(results) {
+        
         // Draw the face mesh landmarks
         const LEFT_EYE_PUPIL_KEYPOINT = [473];
         const RIGHT_EYE_PUPIL_KEYPOINT = [468];
@@ -169,6 +200,10 @@ class EyeGestures{
         let left_eye_coordinates = [];
         let right_eye_coordinates = [];
         if (results.multiFaceLandmarks && this.run) {
+            const canvas = document.getElementById("output_canvas");
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
             for (var landmarks of results.multiFaceLandmarks) {
 
                 offset_x = (landmarks[0].x);
@@ -198,6 +233,7 @@ class EyeGestures{
                 let r_landmarks = RIGHT_EYE_KEYPOINTS.map(index => landmarks[index]);
 
                 // Draw dots for each landmark
+                ctx.fillStyle = '#ff5757';
                 l_landmarks.forEach(landmark => {
                     left_eye_coordinates.push(
                         [
@@ -205,9 +241,19 @@ class EyeGestures{
                             (((landmark.y- offset_y)/height) * scale_y )
                         ]
                     );
+                    ctx.beginPath();
+                    ctx.arc(
+                        landmark.x * canvas.width,
+                        landmark.y * canvas.height,
+                        3, // radius
+                        0,
+                        2 * Math.PI
+                    );
+                    ctx.fill();
                 });
 
                 // Draw dots for each landmark
+                ctx.fillStyle = '#5e17eb';
                 r_landmarks.forEach(landmark => {
                     right_eye_coordinates.push(
                         [
@@ -215,6 +261,15 @@ class EyeGestures{
                             (((landmark.y- offset_y)/height) * scale_y )
                         ]
                     );
+                    ctx.beginPath();
+                    ctx.arc(
+                        landmark.x * canvas.width,
+                        landmark.y * canvas.height,
+                        3, // radius
+                        0,
+                        2 * Math.PI
+                    );
+                    ctx.fill();
                 });
 
                 this.processKeyPoints(
@@ -297,6 +352,8 @@ class EyeGestures{
 
     start(){
         this.run = true;
+        const logoDivEyeGestures = document.getElementById("logoDivEyeGestures");
+        logoDivEyeGestures.style.display = "flex";
 
         if(!this.__invisible){
             let cursor = document.getElementById("cursor");
@@ -331,7 +388,5 @@ class EyeGestures{
     };
 }
 
+// export default EyeGestures;
 // Check if running in secure context
-
-    // Start initialization
-    

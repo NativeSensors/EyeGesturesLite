@@ -16,3 +16,11 @@
     border: medium solid #ff5757;
     z-index: 1000;
 }
+#logoDivEyeGestures{
+}
+#logoDivEyeGestures:hover{
+    transform: scale(1.01);
+}
+#logoDivEyeGestures:active{
+    transform: scale(1.0);
+}
