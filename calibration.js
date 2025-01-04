@@ -8,7 +8,6 @@ const euclideanDistance = (point1, point2) => {
 };
 
 // Update Calibrator to
-
 class Calibrator {
     static PRECISION_LIMIT = 50;
     static PRECISION_STEP = 10;
@@ -48,25 +47,17 @@ class Calibrator {
             this.__tmp_Y_x.shift();
             this.__tmp_X.shift();
         }
-        console.log("add: ", [].concat(this.Y_y,this.__tmp_Y_y),[].concat(this.Y_x,this.__tmp_Y_x));
-        console.log([].concat(this.__tmp_X,this.X)[0],this.Y_y.length);
-        
-        console.log(ML,[].concat(this.__tmp_X,this.X), [].concat(this.Y_y,this.__tmp_Y_y));
-
-        console.log();
         this.reg_x = new ML.MultivariateLinearRegression([].concat(this.__tmp_X,this.X), [].concat(this.__tmp_Y_y,this.Y_y));
         this.reg_y = new ML.MultivariateLinearRegression([].concat(this.__tmp_X,this.X), [].concat(this.__tmp_Y_x,this.Y_x));
         this.fitted = true;
     }
 
     predict(x) {
-        console.log("predict");
         if(this.fitted)
         {
             const flatX = [].concat(x.flat());
             const yx = this.reg_x.predict(flatX)[0];
             const yy = this.reg_y.predict(flatX)[0];
-            console.log("yx, yy: ", yx, yy);
             return [yx, yy];
         }
         return [0.0,0.0];
@@ -94,27 +85,16 @@ class Calibrator {
         this.acceptanceRadius = Calibrator.ACCEPTANCE_RADIUS;
         this.calibrationRadius = this.calibrationRadius;
         this.fitted = false;
-    }
-}
-
-// Fisher-Yates Shuffle
-function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1)); // Random index from 0 to i
-        [array[i], array[j]] = [array[j], array[i]];  // Swap elements
+        this.Y_y = [];
+        this.Y_x = [];
+        this.X = [];
     }
 }
 
 class CalibrationMatrix {
     constructor() {
         this.iterator = 0;
-        // this.points = [
-        //     [0.5, 0.5], [0.75, 0.5], [1, 0.5], [0.25, 0.5], [0, 0.5],
-        //     [1.0, 1.0], [0.75, 1.0], [0.5, 1.0], [0.25, 1.0], [0, 1.0],
-        //     [1.0, 0.0], [0.75, 0.0], [0.5, 0.0], [0.25, 0.0], [0, 0.0],
-        //     [0.0, 0.75], [0.75, 0.75], [0.5, 0.75], [0.25, 0.75], [0, 0.75],
-        //     [1.0, 0.25], [0.75, 0.25], [0.5, 0.25], [0.25, 0.25], [0, 0.25]
-        // ];
+
         this.points = [
             [0.25, 0.25], [0.5, 0.75], [1, 0.5], [0.75, 0.5],  [0, 0.75],
             [0.5, 0.5], [1.0, 0.25], [0.75, 0.0], [0.25, 0.5], [0.5, 0.0],
@@ -122,7 +102,6 @@ class CalibrationMatrix {
             [0, 1.0], [0.25, 1.0], [0.75, 0.75], [0.5, 0.25], [0, 0.25],
             [1.0, 0.5], [0.75, 0.25], [0.5, 1.0], [0.25, 0.75], [0.0, 0.0]
         ];
-        
         
         // this.points = shuffle(this.points);
     }
