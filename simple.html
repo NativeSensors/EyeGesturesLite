@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EyeGesturesLite</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        #status {
+            color: #666;
+            margin: 10px 0;
+        }
+        #error {
+            color: red;
+            display: none;
+            margin: 10px 0;
+        }
+        canvas, video {
+            border: 1px solid #ccc;
+            max-width: 100%;
+        }
+        #cursor {
+            position: fixed;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 255, 0.342);
+            border-radius: 50%;
+            border: medium solid rgba(0, 0, 255, 0.171);
+            z-index: 1000;
+        }
+        #calib_cursor {
+            position: fixed;
+            width: 200px;
+            height: 200px;
+            background: #ff575777;
+            border-radius: 50%;
+            border: medium solid #ff5757;
+            z-index: 1000;
+        }
+    </style>
+    <script src="https://www.lactame.com/lib/ml/6.0.0/ml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>EyeGesturesLite</h1>
+        <div id="status">Initializing...</div>
+        <div id="error"></div>
+        <video id="video" width="640" height="480" autoplay style="display: none;"></video>
+        <canvas id="output_canvas" width="640" height="480" ></canvas>
+    </div>
+    <div id="cursor"></div>
+    <div id="calib_cursor"></div>
+
+    <!-- Load MediaPipe library with version check -->
+    <script src="calibration.js"></script>
+    <script>
+        const calibrator = new Calibrator;
+        const screen_width = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+        const screen_height = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+        let prev_calib = [0.0,0.0];
+        let calib_counter = 0;
+        let calib_max = 20;
+        let counter = 0;
+        let collected_points = 0;  
+        let buffor = [];
+        let buffor_max = 5;
+
+        // Status update function
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        // Error display function
+        function showError(message) {
+            const errorElement = document.getElementById('error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        // Function to load script with promise
+        function loadScript(url) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = url;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        // Main initialization
+        async function init() {
+            try {
+                updateStatus('Loading MediaPipe library...');
+                
+                // Load MediaPipe library
+                await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3/drawing_utils.js');
+                await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js');
+                
+                updateStatus('MediaPipe library loaded, initializing...');
+                
+                if (typeof FaceMesh === 'undefined') {
+                    throw new Error('FaceMesh is not defined. Library not loaded correctly.');
+                }
+
+                await setupMediaPipe();
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showError('Initialization error: ' + error.message);
+            }
+        }
+
+        async function setupMediaPipe() {
+            try {
+                // Initialize FaceMesh solution
+                const faceMesh = new FaceMesh({
+                    locateFile: (file) => {
+                        console.log("Loading file:", file);
+                        return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/${file}`;
+                    }
+                });
+
+                // Set options for FaceMesh
+                faceMesh.setOptions({
+                    maxNumFaces: 1,
+                    refineLandmarks: true,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+
+                // Initialize the FaceMesh instance
+                await faceMesh.initialize();
+                updateStatus('FaceMesh initialized successfully');
+
+                // Set callback for the results
+                faceMesh.onResults(onFaceMeshResults);
+
+                // Access video stream
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: {} 
+                });
+                
+                const videoElement = document.getElementById("video");
+                videoElement.srcObject = stream;
+
+                // Wait for video to be loaded
+                videoElement.onloadeddata = () => {
+                    updateStatus('Video stream started');
+                    videoElement.play();
+                    requestAnimationFrame(processFrame);
+                };
+
+                async function processFrame() {
+                    const videoElement = document.getElementById("video");
+                    if (videoElement.readyState !== videoElement.HAVE_ENOUGH_DATA) {
+                        requestAnimationFrame(processFrame);
+                        return;
+                    }
+
+                    const canvas = document.getElementById("output_canvas");
+                    const ctx = canvas.getContext("2d");
+                    try {
+                        ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+                        await faceMesh.send({ image: videoElement });
+                    } catch (error) {
+                        console.error('Error processing frame:', error);
+                        showError('Error processing frame: ' + error.message);
+                    }
+                    requestAnimationFrame(processFrame);
+                }
+
+            } catch (error) {
+                console.error('Error initializing MediaPipe:', error);
+                showError('Error initializing MediaPipe: ' + error.message);
+            }
+        }
+
+        let start_width = 0;
+        let start_height = 0;
+        function onFaceMeshResults(results) {
+            const canvas = document.getElementById("output_canvas");
+            const ctx = canvas.getContext("2d");
+            
+            // Clear the canvas first
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw the input image
+            if (results.image) {
+                ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+            }
+            
+            // Draw the face mesh landmarks
+            const LEFT_EYE_PUPIL_KEYPOINT = [473];
+            const RIGHT_EYE_PUPIL_KEYPOINT = [468];
+            const LEFT_EYE_KEYPOINTS = [
+                33, 133, 160, 159, 158, 157, 173, 155, 154, 153, 144, 145, 153, 246, 468
+            ];
+            const RIGHT_EYE_KEYPOINTS = [
+                362, 263, 387, 386, 385, 384, 398, 382, 381, 380, 374, 373, 374, 466, 473
+            ];
+            let offset_x = 0;
+            let offset_y = 0;
+            let width = 0;
+            let height = 0;
+            let max_x = 0;
+            let max_y = 0;
+            let left_eye_coordinates = [];
+            let right_eye_coordinates = [];
+            if (results.multiFaceLandmarks) {
+                for (var landmarks of results.multiFaceLandmarks) {
+
+                    offset_x = (landmarks[0].x);
+                    offset_y = (landmarks[1].y);
+                    // offset_x = 0;
+                    // offset_y = 0;
+
+                    landmarks.forEach(landmark => {
+                        offset_x = Math.min(offset_x,landmark.x);
+                        offset_y = Math.min(offset_y,landmark.y);
+                        max_x = Math.max(max_x,landmark.x);
+                        max_y = Math.max(max_y,landmark.y);
+                    })
+
+                    width = max_x - offset_x;
+                    height = max_y - offset_y;
+
+                    if(start_width * start_height == 0){
+                        start_width = width;
+                        start_height = height;
+                    }
+
+                    scale_x = width/start_width;
+                    scale_y = height/start_height;
+
+                    l_landmarks = LEFT_EYE_KEYPOINTS.map(index => landmarks[index]);
+                    r_landmarks = RIGHT_EYE_KEYPOINTS.map(index => landmarks[index]);
+
+                    // Draw dots for each landmark
+                    ctx.fillStyle = "red";
+                    l_landmarks.forEach(landmark => {
+                        left_eye_coordinates.push(
+                            [
+                                ((landmark.x)),
+                                ((landmark.y))
+                            ]
+                        )
+                        ctx.beginPath();
+                        ctx.arc(
+                            landmark.x * canvas.width,
+                            landmark.y * canvas.height,
+                            1, // radius
+                            0,
+                            2 * Math.PI
+                        );
+                        ctx.fill();
+                    });
+
+                    // Draw dots for each landmark
+                    ctx.fillStyle = "blue";
+                    r_landmarks.forEach(landmark => {
+                        right_eye_coordinates.push(
+                            [
+                                ((landmark.x)),
+                                ((landmark.y))
+                            ]
+                        );
+                        ctx.beginPath();
+                        ctx.arc(
+                            landmark.x * canvas.width,
+                            landmark.y * canvas.height,
+                            1, // radius
+                            0,
+                            2 * Math.PI
+                        );
+                        ctx.fill();
+                    });
+                }
+
+                processKeyPoints(
+                    left_eye_coordinates,
+                    right_eye_coordinates,
+                    offset_x * scale_x,
+                    offset_y * scale_x,
+                    scale_x,
+                    scale_y
+                )
+            }
+        }
+
+        function processKeyPoints(left_eye_coordinates,right_eye_coordinates,offset_x,offset_y,scale_x,scale_y)
+        {
+            let keypoints = left_eye_coordinates;
+            keypoints = keypoints.concat(right_eye_coordinates);
+            // keypoints = keypoints.concat([[offset_x,offset_y]]);
+            // keypoints = keypoints.concat([[scale_x,scale_y]]);
+            console.log("keypoints: ",keypoints);
+            let calibration = calib_counter < calib_max;
+
+            let calibration_point = [0.0,0.0];
+
+            let point = calibrator.predict(keypoints);
+            buffor.push(point);
+            if(buffor_max < buffor.length){
+                buffor.shift();
+            }
+            let average_point = [0, 0];
+            if (buffor.length > 0) {
+                average_point = buffor.reduce(
+                    (sum, current) => [sum[0] + current[0], sum[1] + current[1]],
+                    [0, 0]
+                ).map(coord => coord / buffor.length);
+            }
+            point = average_point;
+
+            if(calibration){
+                calibration_point = calibrator.getCurrentPoint(screen_width,screen_height);
+
+                calibrator.add(keypoints,calibration_point);
+                if(euclideanDistance(point,calibration_point) < 0.3 *screen_width && counter > 10)
+                {
+                    calibrator.movePoint();
+                    counter = 0;
+                }
+                else if(euclideanDistance(point,calibration_point) < 0.3 *screen_width){
+                    counter = counter + 1;
+                }
+
+                if(prev_calib[0] != calibration_point[0] || prev_calib[1] != calibration_point[1])
+                {
+                    prev_calib = calibration_point;
+                    calib_counter = calib_counter + 1;
+                }
+
+            }
+
+            let cursor = document.getElementById("cursor");
+            let left = Math.min(Math.max(point[0],0),screen_width)
+            let top = Math.min(Math.max(point[1],0),screen_height)
+            cursor.style.left = `${left - 25}px`;
+            cursor.style.top = `${top - 25}px`;
+            let calib_cursor = document.getElementById("calib_cursor");
+            calib_cursor.style.left = `${prev_calib[0] - 100}px`;
+            calib_cursor.style.top = `${prev_calib[1] - 100}px`;
+            console.log(point,prev_calib);
+        }
+
+        // Check if running in secure context
+        if (window.isSecureContext) {
+            // Start initialization
+            init();
+        } else {
+            showError('This application requires a secure context (HTTPS or localhost)');
+        }
+    </script>
+</body>
+</html>
