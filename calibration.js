@@ -7,82 +7,7 @@ const euclideanDistance = (point1, point2) => {
     );
 };
 
-class NonlinearRegression {
-    constructor(alpha = 0.1, degree = 2) {
-        this.learningRate = 0.001;
-        this.iterations = 1000;
-        this.tolerance = 1e-6;
-        this.parameters = [1, 1, 0]; // Initial parameters [a, b, c]
-        this.degree = degree;  // Kept for compatibility
-    }
-
-    // Transform features (kept for compatibility with existing interface)
-    transformFeatures(X) {
-        return X;
-    }
-
-    // Function to predict values using the current parameters
-    predict(x) {
-        const flatX = Array.isArray(x[0]) ? x[0] : x;
-        // Using a combination of exponential and polynomial terms for better fitting
-        return this.parameters[0] * Math.exp(this.parameters[1] * flatX[0]) + 
-               this.parameters[2] * Math.pow(flatX[0], 2);
-    }
-
-    // Calculate mean squared error
-    meanSquaredError(X, y) {
-        return X.reduce((error, x, i) => {
-            const pred = this.predict(x);
-            return error + Math.pow(pred - y[i], 2);
-        }, 0) / X.length;
-    }
-
-    // Calculate gradients for parameters
-    calculateGradients(X, y) {
-        const gradients = [0, 0, 0];
-        const n = X.length;
-
-        for (let i = 0; i < n; i++) {
-            const x = Array.isArray(X[i][0]) ? X[i][0] : X[i];
-            const predicted = this.predict([x]);
-            const error = predicted - y[i];
-            
-            // Gradient for a (exponential term)
-            gradients[0] += (2 * error * Math.exp(this.parameters[1] * x[0])) / n;
-            // Gradient for b (exponential coefficient)
-            gradients[1] += (2 * error * this.parameters[0] * x[0] * 
-                           Math.exp(this.parameters[1] * x[0])) / n;
-            // Gradient for c (polynomial term)
-            gradients[2] += (2 * error * Math.pow(x[0], 2)) / n;
-        }
-
-        return gradients;
-    }
-
-    // Fit the model to the data
-    fit(X, y) {
-        let prevError = Infinity;
-
-        for (let iter = 0; iter < this.iterations; iter++) {
-            // Calculate gradients
-            const gradients = this.calculateGradients(X, y);
-            
-            // Update parameters with gradient descent
-            this.parameters = this.parameters.map(
-                (param, i) => param - this.learningRate * gradients[i]
-            );
-            
-            // Calculate error
-            const error = this.meanSquaredError(X, y);
-            
-            // Check for convergence
-            if (Math.abs(prevError - error) < this.tolerance) {
-                break;
-            }
-            prevError = error;
-        }
-    }
-}
+// Update Calibrator to
 
 class Calibrator {
     static PRECISION_LIMIT = 50;
@@ -98,9 +23,9 @@ class Calibrator {
         this.__tmp_Y_x = [];
         this.reg = null;
 
-        this.reg_x = new NonlinearRegression(0.1,2);
-        this.reg_y = new NonlinearRegression(0.1,2);
-        this.currentAlgorithm = "Ridge";
+        this.reg_x = null;
+        this.reg_y = null;
+        this.currentAlgorithm = "MLR";
         this.fitted = false;
         this.cvNotSet = true;
 
@@ -115,8 +40,8 @@ class Calibrator {
     add(x, y) {
         const flatX = [].concat(x.flat());
         this.__tmp_X.push(flatX);
-        this.__tmp_Y_y.push(y[0]);
-        this.__tmp_Y_x.push(y[1]);
+        this.__tmp_Y_y.push([y[0]]);
+        this.__tmp_Y_x.push([y[1]]);
         
         if(this.__tmp_Y_y.length > 40){
             this.__tmp_Y_y.shift();
@@ -127,9 +52,10 @@ class Calibrator {
         console.log([].concat(this.__tmp_X,this.X)[0],this.Y_y.length);
         
         console.log(ML,[].concat(this.__tmp_X,this.X), [].concat(this.Y_y,this.__tmp_Y_y));
-        
-        this.reg_x.fit([].concat(this.__tmp_X,this.X), [].concat(this.Y_y,this.__tmp_Y_y));
-        this.reg_y.fit([].concat(this.__tmp_X,this.X), [].concat(this.Y_x,this.__tmp_Y_x));
+
+        console.log();
+        this.reg_x = new ML.MultivariateLinearRegression([].concat(this.__tmp_X,this.X), [].concat(this.__tmp_Y_y,this.Y_y));
+        this.reg_y = new ML.MultivariateLinearRegression([].concat(this.__tmp_X,this.X), [].concat(this.__tmp_Y_x,this.Y_x));
         this.fitted = true;
     }
 
@@ -138,8 +64,9 @@ class Calibrator {
         if(this.fitted)
         {
             const flatX = [].concat(x.flat());
-            const yx = this.reg_x.predict(flatX);
-            const yy = this.reg_y.predict(flatX);
+            const yx = this.reg_x.predict(flatX)[0];
+            const yy = this.reg_y.predict(flatX)[0];
+            console.log("yx, yy: ", yx, yy);
             return [yx, yy];
         }
         return [0.0,0.0];

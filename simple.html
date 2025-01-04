@@ -72,11 +72,11 @@
         const screen_height = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
         let prev_calib = [0.0,0.0];
         let calib_counter = 0;
-        let calib_max = 20;
+        let calib_max = 25;
         let counter = 0;
         let collected_points = 0;  
         let buffor = [];
-        let buffor_max = 5;
+        let buffor_max = 20;
 
         // Status update function
         function updateStatus(message) {
@@ -174,7 +174,12 @@
                     const ctx = canvas.getContext("2d");
                     try {
                         ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-                        await faceMesh.send({ image: videoElement });
+                        ctx.save();
+                        ctx.scale(-1, 1); // Flip horizontally (invert x-axis)
+                        ctx.translate(-canvas.width, 0); // Adjust translation to ensure the image is drawn correctly
+                        faceMesh.send({ image: videoElement });
+                        ctx.restore();
+        
                     } catch (error) {
                         console.error('Error processing frame:', error);
                         showError('Error processing frame: ' + error.message);
@@ -253,8 +258,8 @@
                     l_landmarks.forEach(landmark => {
                         left_eye_coordinates.push(
                             [
-                                ((landmark.x)),
-                                ((landmark.y))
+                                (((landmark.x- offset_x)/width) * scale_x ),
+                                (((landmark.y- offset_y)/width) * scale_y )
                             ]
                         )
                         ctx.beginPath();
@@ -273,8 +278,8 @@
                     r_landmarks.forEach(landmark => {
                         right_eye_coordinates.push(
                             [
-                                ((landmark.x)),
-                                ((landmark.y))
+                                (((landmark.x- offset_x)/width) * scale_x ),
+                                (((landmark.y- offset_y)/width) * scale_y )
                             ]
                         );
                         ctx.beginPath();
@@ -304,9 +309,8 @@
         {
             let keypoints = left_eye_coordinates;
             keypoints = keypoints.concat(right_eye_coordinates);
-            // keypoints = keypoints.concat([[offset_x,offset_y]]);
-            // keypoints = keypoints.concat([[scale_x,scale_y]]);
-            console.log("keypoints: ",keypoints);
+            keypoints = keypoints.concat([[offset_x,offset_y]]);
+            keypoints = keypoints.concat([[scale_x,scale_y]]);
             let calibration = calib_counter < calib_max;
 
             let calibration_point = [0.0,0.0];
@@ -329,7 +333,7 @@
                 calibration_point = calibrator.getCurrentPoint(screen_width,screen_height);
 
                 calibrator.add(keypoints,calibration_point);
-                if(euclideanDistance(point,calibration_point) < 0.3 *screen_width && counter > 10)
+                if(euclideanDistance(point,calibration_point) < 0.3 *screen_width && counter > 20)
                 {
                     calibrator.movePoint();
                     counter = 0;

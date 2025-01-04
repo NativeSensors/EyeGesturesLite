@@ -1,190 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ridge Regression Visualization</title>
-    <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.14.0/plotly.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-        #plot {
-            width: 80%;
-            margin: 0 auto;
-            padding-top: 20px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multivariate Linear Regression</title>
+  <script src="https://www.lactame.com/lib/ml/6.0.0/ml.min.js"></script>
 </head>
 <body>
+  <h1>Multivariate Linear Regression Example</h1>
 
-<h1>Ridge Regression Visualization</h1>
-<p>Polynomial Regression with Degree 2 and Ridge Regularization.</p>
+  <script>
+    // Data for x and y
+    const x = [
+      [0, 0],
+      [1, 2],
+      [2, 3],
+      [3, 4]
+    ];
 
-<div id="plot"></div>
+    const y = [
+      [0],
+      [2],
+      [4],
+      [6]
+    ];
 
-<script>
-// Ridge Regression class implementation
-class RidgeRegression {
-    constructor(alpha = 0.1, degree = 2) {
-        this.lambda = alpha;
-        this.degree = degree; // Degree for polynomial transformation
-        this.weights = null;
-        this.intercept = null;
-    }
+    // Create the MLR model
 
-    // Generate polynomial features for X
-    transformFeatures(X) {
-        return X.map(row => {
-            const transformedRow = [1]; // Add bias term
-            for (let d = 1; d <= this.degree; d++) {
-                row.forEach(x => transformedRow.push(Math.pow(x, d)));
-            }
-            return transformedRow;
-        });
-    }
+    const mlr = new ML.MultivariateLinearRegression(x, y);
 
-    // Matrix multiplication
-    multiply(a, b) {
-        if (a[0].length !== b.length) {
-            throw new Error('Matrix dimensions do not match');
-        }
-        const result = Array(a.length).fill().map(() => Array(b[0].length).fill(0));
-        for (let i = 0; i < a.length; i++) {
-            for (let j = 0; j < b[0].length; j++) {
-                for (let k = 0; k < b.length; k++) {
-                    result[i][j] += a[i][k] * b[k][j];
-                }
-            }
-        }
-        return result;
-    }
+    // Predict for new data
+    const prediction = mlr.predict([3, 3]);
 
-    // Matrix transpose
-    transpose(matrix) {
-        return matrix[0].map((_, i) => matrix.map(row => row[i]));
-    }
-
-    // Add identity matrix multiplied by lambda
-    addRegularization(matrix, lambda) {
-        const n = matrix.length;
-        const result = matrix.map(row => [...row]);
-        for (let i = 0; i < n; i++) {
-            result[i][i] += lambda;
-        }
-        return result;
-    }
-
-    // Solve system of linear equations using Gaussian elimination
-    solve(A, b) {
-        const n = A.length;
-        const augmentedMatrix = A.map((row, i) => [...row, b[i][0]]);
-
-        // Gaussian elimination
-        for (let i = 0; i < n; i++) {
-            let maxRow = i;
-            for (let j = i + 1; j < n; j++) {
-                if (Math.abs(augmentedMatrix[j][i]) > Math.abs(augmentedMatrix[maxRow][i])) {
-                    maxRow = j;
-                }
-            }
-
-            [augmentedMatrix[i], augmentedMatrix[maxRow]] = [augmentedMatrix[maxRow], augmentedMatrix[i]];
-
-            for (let j = i + 1; j < n; j++) {
-                const factor = augmentedMatrix[j][i] / augmentedMatrix[i][i];
-                for (let k = i; k <= n; k++) {
-                    augmentedMatrix[j][k] -= factor * augmentedMatrix[i][k];
-                }
-            }
-        }
-
-        // Back substitution
-        const x = new Array(n).fill(0);
-        for (let i = n - 1; i >= 0; i--) {
-            let sum = 0;
-            for (let j = i + 1; j < n; j++) {
-                sum += augmentedMatrix[i][j] * x[j];
-            }
-            x[i] = (augmentedMatrix[i][n] - sum) / augmentedMatrix[i][i];
-        }
-
-        return x;
-    }
-
-    fit(X, y) {
-        const X_transformed = this.transformFeatures(X);
-        const X_t = this.transpose(X_transformed);
-        const XtX = this.multiply(X_t, X_transformed);
-        const XtX_reg = this.addRegularization(XtX, this.lambda);
-        const Xty = this.multiply(X_t, y.map(val => [val]));
-
-        const coefficients = this.solve(XtX_reg, Xty);
-        this.intercept = coefficients[0];
-        this.weights = coefficients.slice(1);
-    }
-
-    predict(X) {
-        const X_transformed = this.transformFeatures([X])[0]; // Transform single row
-        let prediction = this.intercept;
-        for (let i = 0; i < this.weights.length; i++) {
-            prediction += this.weights[i] * X_transformed[i];
-        }
-        return prediction;
-    }
-}
-
-// Generate some sample data
-const X_data = [
-    [0.1], [0.2], [0.3], [0.4], [0.5], [0.6], [0.7], [0.8], [0.9], [1]
-];
-const y_data = [
-    [0.3], [0.35], [0.4], [0.45], [0.5], [0.6], [0.7], [0.8], [1.0], [1.1]
-];
-
-// Fit Ridge Regression model
-const ridgeModel = new RidgeRegression(0.9, 100); // alpha=0.1, degree=2 for polynomial
-ridgeModel.fit(X_data, y_data);
-
-// Predict the regression curve
-const X_values = [];
-const y_pred = [];
-for (let x = 0; x <= 1; x += 0.01) {
-    X_values.push([x]);
-    y_pred.push(ridgeModel.predict([x]));
-}
-
-// Prepare the plot
-const trace1 = {
-    x: X_data.map(point => point[0]),
-    y: y_data.map(point => point[0]),
-    mode: 'markers',
-    type: 'scatter',
-    name: 'Data Points'
-};
-
-const trace2 = {
-    x: X_values.map(point => point[0]),
-    y: y_pred,
-    mode: 'lines',
-    type: 'scatter',
-    name: 'Ridge Regression Fit'
-};
-
-const layout = {
-    title: 'Ridge Regression Polynomial Fit',
-    xaxis: {
-        title: 'X Values'
-    },
-    yaxis: {
-        title: 'y Values'
-    }
-};
-
-const data = [trace1, trace2];
-
-Plotly.newPlot('plot', data, layout);
-</script>
-
+    // Output the result to the browser console
+    console.log('Prediction for [3, 3]:', prediction);
+  </script>
 </body>
 </html>
