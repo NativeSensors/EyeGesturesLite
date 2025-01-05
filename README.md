@@ -1,1 +1,104 @@
+## EYEGESTURES
+<p align="center">
+  <picture>
+    <source srcset="https://github.com/NativeSensors/EyeGestures/assets/40773550/ddfc8b96-5a7e-4487-9307-6fbd62e8915e" media="(prefers-color-scheme: light)"/>   
+    <source srcset="https://github.com/NativeSensors/EyeGestures/assets/40773550/6d42b8a2-24ea-4cbc-bdb0-ad688ee26c36" media="(prefers-color-scheme: dark)"/>    
+   <img width="300px" height="300px"/>
+  </picture>
+</p>
+
+<a href="https://github.com/pedromxavier/flag-badges">
+    <img src="https://raw.githubusercontent.com/pedromxavier/flag-badges/main/badges/PL.svg" alt="made in PL">
+</a>
+
+EyeGestures is open source eyetracking software/library using native webcams and phone camers for achieving its goal. The aim of library is to bring accessibility of eye-tracking and eye-driven interfaces without requirement of obtaining expensive hardware.
+
+Our [Mission](https://github.com/NativeSensors/EyeGestures/blob/main/MISSION.md)! 
+
 # EyeGesturesLite
+
+EyeGesturesLite is JavaScript implementation of [EyeGestures algoritm](https://github.com/NativeSensors/EyeGestures). If you need python version, check original repository.
+
+### How does it work?
+
+It is a gaze tracker that uses machine learning and built-in cameras (such as a webcam) to provide gaze tracking for the user. It includes a built-in calibration mode that displays 20 red circles for the user to focus on, along with a blue cursor that follows the user’s gaze. During the calibration process, the cursor will gradually start following user's gaze more and more. By the end of the 20 points, the cursor should be able to independently follow the user’s gaze.
+
+### ⚙️ Try:
+
+[EyeGesturesLite](https://eyegestures.com/tryLite)
+
+### 🔧 Build your own:
+
+1. You need two CDN links:
+```html
+<link rel="stylesheet" href="https://eyegestures.com/eyegestures.css">  
+<script src="https://eyegestures.com/eyegestures.js"></script>
+```
+
+2. Place `video` element (which can be hidden) somewhere in the page
+```html
+<video id="video" width="640" height="480" autoplay style="display: none;"></video>
+```
+
+3. Then javascript interface code:
+```html
+<script>
+
+function onPoint(point,calibration){
+    point[0]; // x
+    point[1]; // y
+    calibration; // true - for calibrated data, false if calibration is ongoing
+};
+
+const gestures = new EyeGestures('video',onPoint);
+// gestures.invisible(); // to disable blue tracker
+gestures.start();
+</script>
+```
+
+### rules of using
+
+You can use it free of charge as long as you keep our logo. If you want to remove logo then contact: contact@eyegestures.com. 
+
+### 📇 Find us:
+- [RSS](https://polar.sh/NativeSensors/rss?auth=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwYXRfaWQiOiJkMDYxMDFiOC0xYzYyLTQ1MTYtYjg3YS03NTFhOTM3OTIxZmUiLCJzY29wZXMiOiJhcnRpY2xlczpyZWFkIiwidHlwZSI6ImF1dGgiLCJleHAiOjE3NDMxNjg3ODh9.djoi5ARWHr-xFW_XJ6Fwal3JUT1fAbvx4Npl-daBC5U)
+- [discord](https://discord.gg/sqKdKBJ6)
+- [twitter](https://twitter.com/PW4ltz)
+- [daily.dev](https://dly.to/JEe1Sz6vLey)
+- email: contact@eyegestures.com
+
+### Troubleshooting:
+
+
+### 💻 Contributors
+
+<a href="https://github.com/OWNER/REPO/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=NativeSensors/EyeGesturesLite" />
+</a>
+
+### 💵 Support the project 
+
+We will be extremely grateful for your support: it helps to keep server running + fuels our brains with coffee. 
+
+Support project on Polar (in exchange we provide access to alphas versions!):
+
+<a href="https://polar.sh/NativeSensors"><picture><source media="(prefers-color-scheme: dark)" srcset="https://polar.sh/embed/subscribe.svg?org=NativeSensors&label=Subscribe&darkmode"><img alt="Subscribe on Polar" src="https://polar.sh/embed/subscribe.svg?org=NativeSensors&label=Subscribe"></picture></a>
+
+<picture>
+  <source
+    media="(prefers-color-scheme: dark)"
+    srcset="
+      https://api.star-history.com/svg?repos=NativeSensors/EyeGestures&type=Date&theme=dark
+    "
+  />
+  <source
+    media="(prefers-color-scheme: light)"
+    srcset="
+      https://api.star-history.com/svg?repos=NativeSensors/EyeGestures&type=Date
+    "
+  />
+  <img
+    alt="Star History Chart"
+    src="https://api.star-history.com/svg?repos=NativeSensors/EyeGestures&type=Date"
+  />
+</picture>
