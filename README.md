@@ -36,7 +36,7 @@ It is a gaze tracker that uses machine learning and built-in cameras (such as a 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
 ```
 
-2. You need two CDN links:
+1. You need two CDN links:
 ```html
 <link rel="stylesheet" href="https://eyegestures.com/eyegestures.css">
 <script src="https://eyegestures.com/eyegestures.js"></script>
