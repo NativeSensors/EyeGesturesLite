@@ -14,7 +14,7 @@
     background: #ff575777;
     border-radius: 50%;
     border: medium solid #ff5757;
-    z-index: 1000;
+    z-index: 10000;
 }
 #logoDivEyeGestures{
 }

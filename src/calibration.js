@@ -119,6 +119,6 @@ class CalibrationMatrix {
         const point = this.points[this.iterator];
         return [point[0] * width, point[1] * height];
     }
-}
+};
 
 // export { Calibrator, CalibrationMatrix, euclideanDistance };

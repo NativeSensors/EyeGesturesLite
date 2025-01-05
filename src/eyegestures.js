@@ -25,7 +25,7 @@ class EyeGestures{
         };
         const logo = document.createElement('div');
         logo.style.margin = "10px";
-        logo.innerHTML = '<img src="../src/logoEyeGesturesNew.png" alt="Logo" width="120px">';
+        logo.innerHTML = '<img src="https://eyegestures.com/logoEyeGesturesNew.png" alt="Logo" width="120px">';
         logoDiv.appendChild(logo);
         const canvas = document.createElement('canvas');
         canvas.id = "output_canvas";
@@ -65,6 +65,76 @@ class EyeGestures{
         }
         
     }
+
+    showCalibrationInstructions(onRead) {
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'calibrationOverlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100vw';
+        overlay.style.height = '100vh';
+        overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+        overlay.style.display = 'flex';
+        overlay.style.justifyContent = 'center';
+        overlay.style.alignItems = 'center';
+        overlay.style.zIndex = '1000';
+
+        // Create content container
+        const content = document.createElement('div');
+        content.style.textAlign = 'center';
+        content.style.color = '#fff';
+        content.style.fontFamily = 'Arial, sans-serif';
+
+        // Create instructional text
+        const instructionText1 = document.createElement('h3');
+        instructionText1.textContent = 'EyeGestures Calibration:';
+        instructionText1.style.fontSize = '1.5rem';
+        instructionText1.style.marginBottom = '20px';
+
+        const instructionText2 = document.createElement('p');
+        instructionText2.innerHTML = 'To calibrate properly you need to gaze on <span style="color: #ff5757; font-weight: bold;">25 red circles</span>.';
+        instructionText2.style.marginBottom = '20px';
+        
+        const instructionText3 = document.createElement('p');
+        instructionText3.innerHTML = 'The <span style="color: #5e17eb; font-weight: bold;">blue circle</span> is your estimated gaze. With every calibration point, the tracker will gradually listen more and more to your gaze.';
+        instructionText3.style.marginBottom = '20px';
+
+        // Create button
+        const button = document.createElement('button');
+        button.textContent = 'Continue';
+        button.style.padding = '10px 20px';
+        button.style.fontSize = '1rem';
+        button.style.border = 'none';
+        button.style.borderRadius = '5px';
+        button.style.backgroundColor = '#5e17eb';
+        button.style.color = '#fff';
+        button.style.cursor = 'pointer';
+
+        // Button click event to remove overlay
+        button.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            onRead();
+        });
+        // Append elements to content
+        content.appendChild(instructionText1);
+        content.appendChild(instructionText2);
+        content.appendChild(instructionText3);
+        content.appendChild(button);
+
+        // Append content to overlay
+        overlay.appendChild(content);
+
+        // Append overlay to body
+        document.body.appendChild(overlay);
+
+        setTimeout(() => {
+            document.body.removeChild(overlay);
+            onRead();
+        },15000)
+    }
+
 
     // Status update function
     updateStatus(message) {
@@ -349,18 +419,24 @@ class EyeGestures{
         this.onGaze(point,calibration);
     }
 
+    __run(){
+        this.run = true;
+    }
 
     start(){
-        this.run = true;
         const logoDivEyeGestures = document.getElementById("logoDivEyeGestures");
         logoDivEyeGestures.style.display = "flex";
+
+        this.showCalibrationInstructions(this.__run.bind(this));
 
         if(!this.__invisible){
             let cursor = document.getElementById("cursor");
             cursor.style.display = "block";
         }
+
         let calib_cursor = document.getElementById("calib_cursor");
         calib_cursor.style.display = "block";
+        // this.run = true;
     };
 
     invisible()
@@ -388,5 +464,5 @@ class EyeGestures{
     };
 }
 
-// export default EyeGestures;
+// export { EyeGestures };
 // Check if running in secure context
