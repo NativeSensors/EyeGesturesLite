@@ -35,9 +35,11 @@ It is a gaze tracker that uses machine learning and built-in cameras (such as a 
 <script src="https://eyegestures.com/eyegestures.js"></script>
 ```
 
-2. Place `video` element (which can be hidden) somewhere in the page
+2. Place `video` element (which can be hidden) somewhere in the page together with status and error divs (can stay invisible):
 ```html
 <video id="video" width="640" height="480" autoplay style="display: none;"></video>
+<div id="status" style="display : none;">Initializing...</div>
+<div id="error" style="display : none;"></div>
 ```
 
 3. Then javascript interface code:
