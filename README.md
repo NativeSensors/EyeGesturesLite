@@ -31,7 +31,7 @@ It is a gaze tracker that uses machine learning and built-in cameras (such as a 
 
 0. External dependencies CDNs:
 
-```
+```html
 <script src="https://www.lactame.com/lib/ml/6.0.0/ml.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
 ```
