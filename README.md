@@ -74,7 +74,14 @@ gestures.start();
 npm install eyegestures
 ```
 
-2. try to import:
+2. Place `video` element in your DOM (which can be hidden) somewhere in the page together with status and error divs (can stay invisible):
+```html
+<video id="video_element_id" width="640" height="480" autoplay style="display: none;"></video>
+<div id="status" style="display : none;">Initializing...</div>
+<div id="error" style="display : none;"></div>
+```
+
+3. try to import:
 ```JS
 import EyeGestures from 'eyegestures'; 
 
