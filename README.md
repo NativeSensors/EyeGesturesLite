@@ -29,7 +29,7 @@ It is a gaze tracker that uses machine learning and built-in cameras (such as a 
 
 ### 🔧 Build your own:
 
-## CDN:
+#### CDN:
 
 0. External dependencies CDNs:
 
@@ -67,7 +67,7 @@ gestures.start();
 </script>
 ```
 
-## NPM package [WiP]:
+#### NPM package [WiP]:
 
 1. Install npm package:
 ```
