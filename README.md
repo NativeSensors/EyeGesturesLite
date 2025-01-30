@@ -29,6 +29,8 @@ It is a gaze tracker that uses machine learning and built-in cameras (such as a 
 
 ### 🔧 Build your own:
 
+## CDN:
+
 0. External dependencies CDNs:
 
 ```html
@@ -64,6 +66,25 @@ const gestures = new EyeGestures('video',onPoint);
 gestures.start();
 </script>
 ```
+
+## NPM package [WiP]:
+
+1. Install npm package:
+```
+npm install eyegestures
+```
+
+2. try to import:
+```JS
+import EyeGestures from 'eyegestures'; 
+
+const gestures = new EyeGestures("video_element_id",(point,calibration)=>{/*point,calibration*/})
+// after this call: gestures.start();
+console.log(gestures);
+```
+>[!Warning]
+> EyeGestures needs DOM to operate and its constructor expects to receive video element/camera feed id string.
+>
 
 ### rules of using
 
