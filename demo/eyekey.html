@@ -123,9 +123,9 @@ const ROWS = [
   ['q','w','e','r','t','y','u','i','o','p'],
   ['a','s','d','f','g','h','j','k','l'],
   ['SHIFT','z','x','c','v','b','n','m','⌫'],
-  ['123','SPACE','.,!?','↵'],
+  ['123','SPACE','.,!?','↵','CLR'],
 ];
-const WIDE = {'SHIFT':1.8,'⌫':1.8,'SPACE':4,'123':1.4,'.,!?':1.6,'↵':1.6};
+const WIDE = {'SHIFT':1.8,'⌫':1.8,'SPACE':4,'123':1.4,'.,!?':1.6,'↵':1.6,'CLR':1.4};
 
 let text='', shiftOn=false, numMode=false, isCalib=false, readyForGaze=false;
 
@@ -175,6 +175,7 @@ function speak(str){
 function pressKey(ch){
   switch(ch){
     case '⌫': text=text.slice(0,-1); break;
+    case 'CLR': text=''; break;
     case 'SPACE': {
       text+=' ';
       const words=text.trimEnd().split(/\s+/);
@@ -224,18 +225,24 @@ function updateLabels(){
 }
 
 let dwellMs=1500, gazeTarget=null, gazeStart=null, rafId=null;
+const keyProgress=new Map();
 const dwellRange=document.getElementById('dwell-range');
 const dwellVal=document.getElementById('dwell-val');
 
 dwellRange.addEventListener('input',()=>{
   dwellMs=+dwellRange.value;
   dwellVal.textContent=(dwellMs/1000).toFixed(1)+' s';
-  resetDwell();
+  keyProgress.clear();
+  resetDwell(false);
 });
 
-function resetDwell(){
+function resetDwell(save=true){
   cancelAnimationFrame(rafId);
   if(gazeTarget){
+    if(save && gazeStart !== null){
+      const elapsed=performance.now()-gazeStart;
+      keyProgress.set(gazeTarget, (keyProgress.get(gazeTarget)||0)+elapsed);
+    }
     gazeTarget.classList.remove('gazed');
     const c=gazeTarget.querySelector('.dwell-svg circle');
     const svg=gazeTarget.querySelector('.dwell-svg');
@@ -250,8 +257,9 @@ function resetDwell(){
 }
 
 function startDwell(el){
-    console.log("el: " + el)
-    gazeTarget=el;gazeStart=performance.now();
+    const saved=keyProgress.get(el)||0;
+    gazeTarget=el;
+    gazeStart=performance.now()-saved;
     el.classList.add('gazed');
     const svg=el.querySelector('.dwell-svg');
     if(svg)svg.style.opacity='1';
@@ -271,11 +279,11 @@ function animateDwell(){
     circle.style.strokeDashoffset=circ*(1-frac);
   }
   if(frac<1){rafId=requestAnimationFrame(animateDwell);}
-  else{activate(gazeTarget);resetDwell();}
+  else{activate(gazeTarget);resetDwell(false);}
 }
 
 function activate(el){
-    console.log("activate: " + el);
+    keyProgress.delete(el);
     el.classList.add('activated');
     setTimeout(()=>el.classList.remove('activated'),220);
     pressKey(el.dataset.key);
@@ -283,7 +291,6 @@ function activate(el){
 
 function keyAtPoint(x,y){
     const el=document.elementsFromPoint(x,y);
-    console.log("x,y, el: ", el);
     if(!el)return null;
     let node=el;
 
@@ -312,7 +319,6 @@ function onPoint(point,calibration){
     setStatus('active','Tracking active — gaze & hold to type');
   }
   const hovered = keyAtPoint(x,y);
-  console.log(hovered);
   if(!hovered){resetDwell();return;}
   if(hovered!==gazeTarget){resetDwell();startDwell(hovered);}
 }
