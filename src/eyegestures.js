@@ -1,4 +1,4 @@
-export default class EyeGestures{ // strip export default before making cdn/web embeddable version 
+class EyeGestures{ // strip export default before making cdn/web embeddable version 
     constructor(videoElement_ID, onGaze)
     {
         const cursor = document.createElement('div');
@@ -45,6 +45,10 @@ export default class EyeGestures{ // strip export default before making cdn/web 
         this.screen_height = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
         this.prev_calib = [0.0,0.0];
         this.head_starting_pos = [0.0,0.0];
+
+        this.eye_landmarks_calib_regions = [];
+        this.eye_calib_radius = 0.1;
+
         this.calib_counter = 0;
         this.calib_max = 25;
         this.counter = 0;
@@ -358,6 +362,18 @@ export default class EyeGestures{ // strip export default before making cdn/web 
         }
     }
 
+    upcalibrate(){
+        this.showCalibrationInstructions(this.__run.bind(this));
+
+        if(!this.__invisible){
+            let cursor = document.getElementById("cursor");
+            cursor.style.display = "block";
+        }
+
+        let calib_cursor = document.getElementById("calib_cursor");
+        calib_cursor.style.display = "block";
+    }
+
     processKeyPoints(left_eye_coordinates,right_eye_coordinates,offset_x,offset_y,scale_x,scale_y,width,height)
     {
         let keypoints = left_eye_coordinates;
@@ -396,6 +412,7 @@ export default class EyeGestures{ // strip export default before making cdn/web 
         point = average_point;
 
         if(calibration){
+            this.eye_landmarks_calib_regions.push(left_eye_coordinates[0]);
             calibration_point = this.calibrator.getCurrentPoint(this.screen_width,this.screen_height);
 
             this.calibrator.add(keypoints,calibration_point);
@@ -416,6 +433,22 @@ export default class EyeGestures{ // strip export default before making cdn/web 
 
         }
         else{
+            let not_found_calib_region = true;
+            for (let region of this.eye_landmarks_calib_regions){
+                console.log("euclideanDistance: ", euclideanDistance(region,left_eye_coordinates[0]), "calib radius: ", this.eye_calib_radius);
+                console.log("region: ", region, " left_eye_coordinates: ",left_eye_coordinates[0])
+                if (euclideanDistance(region,left_eye_coordinates[0]) < this.eye_calib_radius) {
+                    not_found_calib_region = false;
+                    break;
+                }
+            }
+
+            if(not_found_calib_region) {
+                this.calib_max += 5;
+                this.upcalibrate();
+                return;
+            }
+
             let calib_cursor = document.getElementById("calib_cursor");
             calib_cursor.style.display = "None";
         }
