@@ -31,5 +31,8 @@
   "homepage": "https://github.com/NativeSensors/EyeGesturesLite#readme",
   "dependencies": {
     "eyegestures": "^1.0.0"
+  },
+  "devDependencies": {
+    "terser": "^5.48.0"
   }
 }
