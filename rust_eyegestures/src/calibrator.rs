@@ -22,6 +22,11 @@ impl LinearRegression {
 
     fn fit(&mut self) {
         let n = self.x_data.len();
+        if n == 0 {
+            self.fitted = false;
+            return;
+        }
+
         let m = self.x_data[0].len();
         let mut xtx = vec![vec![0.0f64; m]; m];
         let mut xty = vec![0.0f64; m];
@@ -35,9 +40,15 @@ impl LinearRegression {
             }
         }
 
+        for (i, row) in xtx.iter_mut().enumerate() {
+            row[i] += 1e-6;
+        }
+
         if let Some(w) = gaussian_elimination(xtx, xty) {
             self.weights = w;
             self.fitted = true;
+        } else {
+            self.fitted = false;
         }
     }
 

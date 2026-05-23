@@ -1,14 +1,16 @@
 use crate::{Calibrator, euclidean_distance};
+use wasm_bindgen::prelude::*;
 
-pub struct GazeResult {
+struct GazeResult {
     pub x: f64,
     pub y: f64,
     pub calibrating: bool,
     pub calib_point: [f64; 2],
 }
 
+#[wasm_bindgen]
 pub struct EyeGestures {
-    pub calibrator: Calibrator,
+    calibrator: Calibrator,
     screen_width: f64,
     screen_height: f64,
     calib_counter: usize,
@@ -23,7 +25,9 @@ pub struct EyeGestures {
     last_keypoints: Vec<f64>,
 }
 
+#[wasm_bindgen]
 impl EyeGestures {
+    #[wasm_bindgen(constructor)]
     pub fn new(screen_width: f64, screen_height: f64) -> Self {
         Self {
             calibrator: Calibrator::new(),
@@ -42,7 +46,36 @@ impl EyeGestures {
         }
     }
 
-    pub fn process(&mut self, landmarks: &[[f64; 2]]) -> GazeResult {
+    pub fn process(&mut self, landmarks: Vec<f64>) -> Vec<f64> {
+        let landmarks: Vec<[f64; 2]> = landmarks
+            .chunks_exact(2)
+            .map(|pair| [pair[0], pair[1]])
+            .collect();
+
+        let result = self.process_landmarks(&landmarks);
+        vec![
+            result.x,
+            result.y,
+            if result.calibrating { 1.0 } else { 0.0 },
+            result.calib_point[0],
+            result.calib_point[1],
+        ]
+    }
+
+    pub fn add_calibration_point(&mut self, x: f64, y: f64) {
+        self.calib_counter += 1;
+        self.calib_max += 1;
+        self.calibrator.add(self.last_keypoints.clone(), [x, y]);
+    }
+
+    pub fn recalibrate(&mut self) {
+        self.calibrator.reset();
+        self.calib_counter = 0;
+    }
+}
+
+impl EyeGestures {
+    fn process_landmarks(&mut self, landmarks: &[[f64; 2]]) -> GazeResult {
         let left_indices  = [33, 133, 160, 159, 158, 157, 173, 155, 154, 153, 144, 145, 153, 246, 468];
         let right_indices = [362, 263, 387, 386, 385, 384, 398, 382, 381, 380, 374, 373, 374, 466, 473];
 
@@ -128,16 +161,5 @@ impl EyeGestures {
         let y = point[1].clamp(0.0, self.screen_height);
 
         GazeResult { x, y, calibrating, calib_point }
-    }
-
-    pub fn add_calibration_point(&mut self, x: f64, y: f64) {
-        self.calib_counter += 1;
-        self.calib_max += 1;
-        self.calibrator.add(self.last_keypoints.clone(), [x, y]);
-    }
-
-    pub fn recalibrate(&mut self) {
-        self.calibrator.reset();
-        self.calib_counter = 0;
     }
 }

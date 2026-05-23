@@ -4,7 +4,7 @@ mod eyegestures;
 
 pub use calibrator::Calibrator;
 pub use fixation::Fixation;
-pub use eyegestures::{EyeGestures, GazeResult};
+pub use eyegestures::EyeGestures;
 
 pub fn euclidean_distance(a: &[f64], b: &[f64]) -> f64 {
     a.iter()
