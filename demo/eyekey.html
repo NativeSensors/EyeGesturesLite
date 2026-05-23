@@ -7,7 +7,9 @@
   <script src="https://www.lactame.com/lib/ml/6.0.0/ml.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
   <link rel="stylesheet" href="https://eyegestures.com/eyegestures.css"/>
-  <script src="https://eyegestures.com/eyegestures.js"></script>
+  <!-- <script src="https://eyegestures.com/eyegestures.js"></script> -->
+  <script src="../src/calibration.js"></script>
+  <script src="../src/eyegestures.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
@@ -123,9 +125,9 @@ const ROWS = [
   ['q','w','e','r','t','y','u','i','o','p'],
   ['a','s','d','f','g','h','j','k','l'],
   ['SHIFT','z','x','c','v','b','n','m','⌫'],
-  ['123','SPACE','.,!?','↵'],
+  ['123','SPACE','.,!?','↵','CLR'],
 ];
-const WIDE = {'SHIFT':1.8,'⌫':1.8,'SPACE':4,'123':1.4,'.,!?':1.6,'↵':1.6};
+const WIDE = {'SHIFT':1.8,'⌫':1.8,'SPACE':4,'123':1.4,'.,!?':1.6,'↵':1.6,'CLR':1.4};
 
 let text='', shiftOn=false, numMode=false, isCalib=false, readyForGaze=false;
 
@@ -175,6 +177,7 @@ function speak(str){
 function pressKey(ch){
   switch(ch){
     case '⌫': text=text.slice(0,-1); break;
+    case 'CLR': text=''; break;
     case 'SPACE': {
       text+=' ';
       const words=text.trimEnd().split(/\s+/);
@@ -230,12 +233,15 @@ const dwellVal=document.getElementById('dwell-val');
 dwellRange.addEventListener('input',()=>{
   dwellMs=+dwellRange.value;
   dwellVal.textContent=(dwellMs/1000).toFixed(1)+' s';
-  resetDwell();
+  resetDwell(false);
 });
 
-function resetDwell(){
+function resetDwell(save=true){
   cancelAnimationFrame(rafId);
   if(gazeTarget){
+    if(save && gazeStart !== null){
+      const elapsed=performance.now()-gazeStart;
+    }
     gazeTarget.classList.remove('gazed');
     const c=gazeTarget.querySelector('.dwell-svg circle');
     const svg=gazeTarget.querySelector('.dwell-svg');
@@ -250,8 +256,9 @@ function resetDwell(){
 }
 
 function startDwell(el){
-    console.log("el: " + el)
-    gazeTarget=el;gazeStart=performance.now();
+    const saved=0;
+    gazeTarget=el;
+    gazeStart=performance.now()-saved;
     el.classList.add('gazed');
     const svg=el.querySelector('.dwell-svg');
     if(svg)svg.style.opacity='1';
@@ -271,19 +278,26 @@ function animateDwell(){
     circle.style.strokeDashoffset=circ*(1-frac);
   }
   if(frac<1){rafId=requestAnimationFrame(animateDwell);}
-  else{activate(gazeTarget);resetDwell();}
+  else{activate(gazeTarget);resetDwell(false);}
 }
 
+let gestures = null;
+
 function activate(el){
-    console.log("activate: " + el);
     el.classList.add('activated');
     setTimeout(()=>el.classList.remove('activated'),220);
+    const rect = el.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    gestures.addPointToCalibration(centerX, centerY);
+    // use centerX / centerY as needed
     pressKey(el.dataset.key);
 }
 
 function keyAtPoint(x,y){
+    if (x===NaN||y===NaN)return null;
+    console.log("Finding key at point:", x, y);
     const el=document.elementsFromPoint(x,y);
-    console.log("x,y, el: ", el);
     if(!el)return null;
     let node=el;
 
@@ -312,7 +326,6 @@ function onPoint(point,calibration){
     setStatus('active','Tracking active — gaze & hold to type');
   }
   const hovered = keyAtPoint(x,y);
-  console.log(hovered);
   if(!hovered){resetDwell();return;}
   if(hovered!==gazeTarget){resetDwell();startDwell(hovered);}
 }
@@ -324,7 +337,7 @@ function setStatus(state,msg){pill.className=state;pillTxt.textContent=msg}
 window.addEventListener('load',()=>{
   setStatus('calibrating','Requesting camera…');
   try{
-    const gestures=new EyeGestures('video',onPoint);
+    gestures = new EyeGestures('video',onPoint);
     gestures.start();
     setStatus('calibrating','Follow the red circles to calibrate');
   }catch(err){
