@@ -1,4 +1,4 @@
-VERSION = 1.2.0
+VERSION = "1.2.0"
 class EyeGestures{ // strip export default before making cdn/web embeddable version 
     constructor(videoElement_ID, onGaze)
     {
