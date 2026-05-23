@@ -7,7 +7,9 @@
   <script src="https://www.lactame.com/lib/ml/6.0.0/ml.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
   <link rel="stylesheet" href="https://eyegestures.com/eyegestures.css"/>
-  <script src="https://eyegestures.com/eyegestures.js"></script>
+  <!-- <script src="https://eyegestures.com/eyegestures.js"></script> -->
+  <script src="../src/calibration.js"></script>
+  <script src="../src/eyegestures.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
@@ -225,14 +227,12 @@ function updateLabels(){
 }
 
 let dwellMs=1500, gazeTarget=null, gazeStart=null, rafId=null;
-const keyProgress=new Map();
 const dwellRange=document.getElementById('dwell-range');
 const dwellVal=document.getElementById('dwell-val');
 
 dwellRange.addEventListener('input',()=>{
   dwellMs=+dwellRange.value;
   dwellVal.textContent=(dwellMs/1000).toFixed(1)+' s';
-  keyProgress.clear();
   resetDwell(false);
 });
 
@@ -241,7 +241,6 @@ function resetDwell(save=true){
   if(gazeTarget){
     if(save && gazeStart !== null){
       const elapsed=performance.now()-gazeStart;
-      keyProgress.set(gazeTarget, (keyProgress.get(gazeTarget)||0)+elapsed);
     }
     gazeTarget.classList.remove('gazed');
     const c=gazeTarget.querySelector('.dwell-svg circle');
@@ -257,7 +256,7 @@ function resetDwell(save=true){
 }
 
 function startDwell(el){
-    const saved=keyProgress.get(el)||0;
+    const saved=0;
     gazeTarget=el;
     gazeStart=performance.now()-saved;
     el.classList.add('gazed');
@@ -282,14 +281,22 @@ function animateDwell(){
   else{activate(gazeTarget);resetDwell(false);}
 }
 
+let gestures = null;
+
 function activate(el){
-    keyProgress.delete(el);
     el.classList.add('activated');
     setTimeout(()=>el.classList.remove('activated'),220);
+    const rect = el.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    gestures.addPointToCalibration(centerX, centerY);
+    // use centerX / centerY as needed
     pressKey(el.dataset.key);
 }
 
 function keyAtPoint(x,y){
+    if (x===NaN||y===NaN)return null;
+    console.log("Finding key at point:", x, y);
     const el=document.elementsFromPoint(x,y);
     if(!el)return null;
     let node=el;
@@ -330,7 +337,7 @@ function setStatus(state,msg){pill.className=state;pillTxt.textContent=msg}
 window.addEventListener('load',()=>{
   setStatus('calibrating','Requesting camera…');
   try{
-    const gestures=new EyeGestures('video',onPoint);
+    gestures = new EyeGestures('video',onPoint);
     gestures.start();
     setStatus('calibrating','Follow the red circles to calibrate');
   }catch(err){

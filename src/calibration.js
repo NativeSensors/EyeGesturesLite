@@ -45,7 +45,6 @@ class Calibrator {
             this.__tmp_Y_x.shift();
             this.__tmp_X.shift();
         }
-        console.log(ML);
         this.reg_x = new ML.MultivariateLinearRegression([].concat(this.__tmp_X,this.X), [].concat(this.__tmp_Y_y,this.Y_y));
         this.reg_y = new ML.MultivariateLinearRegression([].concat(this.__tmp_X,this.X), [].concat(this.__tmp_Y_x,this.Y_x));
         this.fitted = true;

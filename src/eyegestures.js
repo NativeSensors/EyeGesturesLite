@@ -47,16 +47,16 @@ class EyeGestures{ // strip export default before making cdn/web embeddable vers
         this.head_starting_pos = [0.0,0.0];
 
         this.eye_landmarks_calib_regions = [];
-        this.eye_calib_radius = 0.1;
+        this.eye_calib_radius = 0.01;
 
         this.calib_counter = 0;
         this.calib_max = 25;
-        this.counter = 0;
-        this.collected_points = 0;  
+        this.counter = 0; 
         this.buffor = [];
         this.buffor_max = 20;
         this.start_width = 0;
         this.start_height = 0;
+        this.most_recent_keypoints = [];
         this.onGaze = onGaze;
 
         this.run = false;
@@ -69,6 +69,34 @@ class EyeGestures{ // strip export default before making cdn/web embeddable vers
             console.error('This application requires a secure context (HTTPS or localhost)');
         }
         
+    }
+
+    showUpCalibrationInstructions(onRead) {
+        // Create content container
+        // const content = document.createElement('div');
+        // content.style.textAlign = 'center';
+        // content.style.color = '#fff';
+        // content.style.fontFamily = 'Arial, sans-serif';
+
+        // // Create instructional text
+        // const instructionText1 = document.createElement('h3');
+        // instructionText1.textContent = 'EyeGestures Upcalibration:';
+        // instructionText1.style.fontSize = '1.5rem';
+        // instructionText1.style.marginBottom = '20px';
+
+        // const instructionText2 = document.createElement('p');
+        // instructionText2.innerHTML = 'We need to improve calibration. Focus on <span style="color: #ff5757; font-weight: bold;">25 red circles</span>.';
+        // instructionText2.style.marginBottom = '20px';
+        
+        // const instructionText3 = document.createElement('p');
+        // instructionText3.innerHTML = 'The <span style="color: #5e17eb; font-weight: bold;">blue circle</span> is your estimated gaze. With every calibration point, the tracker will gradually listen more and more to your gaze.';
+        // instructionText3.style.marginBottom = '20px';
+
+        // // Append elements to content
+        // content.appendChild(instructionText1);
+        // content.appendChild(instructionText2);
+        // content.appendChild(instructionText3);
+        // content.appendChild(button);
     }
 
     showCalibrationInstructions(onRead) {
@@ -363,7 +391,7 @@ class EyeGestures{ // strip export default before making cdn/web embeddable vers
     }
 
     upcalibrate(){
-        this.showCalibrationInstructions(this.__run.bind(this));
+        this.showUpCalibrationInstructions(this.__run.bind(this));
 
         if(!this.__invisible){
             let cursor = document.getElementById("cursor");
@@ -397,6 +425,7 @@ class EyeGestures{ // strip export default before making cdn/web embeddable vers
 
         let calibration_point = [0.0,0.0];
 
+        this.most_recent_keypoints = keypoints;
         let point = this.calibrator.predict(keypoints);
         this.buffor.push(point);
         if(this.buffor_max < this.buffor.length){
@@ -411,6 +440,7 @@ class EyeGestures{ // strip export default before making cdn/web embeddable vers
         }
         point = average_point;
 
+        console.log("Calibration:", calibration);
         if(calibration){
             this.eye_landmarks_calib_regions.push(left_eye_coordinates[0]);
             calibration_point = this.calibrator.getCurrentPoint(this.screen_width,this.screen_height);
@@ -435,8 +465,6 @@ class EyeGestures{ // strip export default before making cdn/web embeddable vers
         else{
             let not_found_calib_region = true;
             for (let region of this.eye_landmarks_calib_regions){
-                console.log("euclideanDistance: ", euclideanDistance(region,left_eye_coordinates[0]), "calib radius: ", this.eye_calib_radius);
-                console.log("region: ", region, " left_eye_coordinates: ",left_eye_coordinates[0])
                 if (euclideanDistance(region,left_eye_coordinates[0]) < this.eye_calib_radius) {
                     not_found_calib_region = false;
                     break;
@@ -444,6 +472,7 @@ class EyeGestures{ // strip export default before making cdn/web embeddable vers
             }
 
             if(not_found_calib_region) {
+                console.log("up calibrate")
                 this.calib_max += 5;
                 this.upcalibrate();
                 return;
@@ -507,5 +536,13 @@ class EyeGestures{ // strip export default before making cdn/web embeddable vers
     recalibrate(){
         this.calibrator.unfit();
         this.calib_counter = 0;
+    };
+
+    addPointToCalibration(x, y){
+        this.calib_counter += 1;
+        this.calib_max += 1;
+        console.log("Adding point to calibration:", x, y);
+        console.log(this.most_recent_keypoints, x, y);
+        this.calibrator.add(this.most_recent_keypoints,[x, y]);
     };
 }
