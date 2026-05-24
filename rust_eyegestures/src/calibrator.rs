@@ -1,3 +1,6 @@
+use wasm_bindgen::JsValue;
+use std::collections::VecDeque;
+
 struct LinearRegression {
     x_data: Vec<Vec<f64>>,
     y_data: Vec<f64>,
@@ -10,14 +13,12 @@ impl LinearRegression {
         Self { x_data: vec![], y_data: vec![], weights: vec![], fitted: false }
     }
 
-    fn add(&mut self, x: Vec<f64>, y: f64) {
-        self.x_data.push(x);
+    fn add_sample(&mut self, x: Vec<f64>, y: f64) {
+        // Match JS MLR behavior: include a bias/intercept feature.
+        let mut x_with_bias = x;
+        x_with_bias.push(1.0);
+        self.x_data.push(x_with_bias);
         self.y_data.push(y);
-        if self.x_data.len() > 40 {
-            self.x_data.remove(0);
-            self.y_data.remove(0);
-        }
-        self.fit();
     }
 
     fn fit(&mut self) {
@@ -41,7 +42,7 @@ impl LinearRegression {
         }
 
         for (i, row) in xtx.iter_mut().enumerate() {
-            row[i] += 1e-6;
+            row[i] += 1e-9;
         }
 
         if let Some(w) = gaussian_elimination(xtx, xty) {
@@ -56,7 +57,9 @@ impl LinearRegression {
         if !self.fitted {
             return 0.0;
         }
-        x.iter().zip(&self.weights).map(|(a, b)| a * b).sum()
+        let weighted_sum: f64 = x.iter().zip(&self.weights).map(|(a, b)| a * b).sum();
+        let bias = self.weights.get(x.len()).copied().unwrap_or(0.0);
+        weighted_sum + bias
     }
 }
 
@@ -100,9 +103,9 @@ const CALIB_POINTS: [[f64; 2]; 25] = [
 ];
 
 pub struct Calibrator {
-    tmp_x: Vec<Vec<f64>>,
+    tmp_x: VecDeque<Vec<f64>>,
     stable_x: Vec<Vec<f64>>,
-    tmp_y: Vec<[f64; 2]>,
+    tmp_y: VecDeque<[f64; 2]>,
     stable_y: Vec<[f64; 2]>,
     reg_x: LinearRegression,
     reg_y: LinearRegression,
@@ -113,9 +116,9 @@ pub struct Calibrator {
 impl Calibrator {
     pub fn new() -> Self {
         Self {
-            tmp_x: vec![],
+            tmp_x: VecDeque::new(),
             stable_x: vec![],
-            tmp_y: vec![],
+            tmp_y: VecDeque::new(),
             stable_y: vec![],
             reg_x: LinearRegression::new(),
             reg_y: LinearRegression::new(),
@@ -125,12 +128,12 @@ impl Calibrator {
     }
 
     pub fn add(&mut self, keypoints: Vec<f64>, target: [f64; 2]) {
-        self.tmp_x.push(keypoints.clone());
-        self.tmp_y.push(target);
+        self.tmp_x.push_back(keypoints);
+        self.tmp_y.push_back(target);
 
-        if self.tmp_x.len() > 40 {
-            self.tmp_x.remove(0);
-            self.tmp_y.remove(0);
+        if self.tmp_x.len() > 20 {
+            self.tmp_x.pop_front();
+            self.tmp_y.pop_front();
         }
 
         let all_x: Vec<Vec<f64>> = self.tmp_x.iter().chain(self.stable_x.iter()).cloned().collect();
@@ -139,11 +142,14 @@ impl Calibrator {
         self.reg_x = LinearRegression::new();
         self.reg_y = LinearRegression::new();
         for (x, y) in all_x.into_iter().zip(all_y.into_iter()) {
-            self.reg_x.add(x.clone(), y[0]);
-            self.reg_y.add(x, y[1]);
+            self.reg_x.add_sample(x.clone(), y[0]);
+            self.reg_y.add_sample(x, y[1]);
         }
 
-        self.fitted = true;
+        self.reg_x.fit();
+        self.reg_y.fit();
+
+        self.fitted = self.reg_x.fitted && self.reg_y.fitted;
     }
 
     pub fn predict(&self, keypoints: &[f64]) -> [f64; 2] {

@@ -89,6 +89,8 @@
         const video = document.getElementById("video");
         const gaze = document.getElementById("gaze");
         const target = document.getElementById("target");
+        const mirrorCanvas = document.createElement("canvas");
+        const mirrorCtx = mirrorCanvas.getContext("2d");
 
         const data = { max: 100, data: [] };
         const heatmap = h337.create({
@@ -170,6 +172,9 @@
                     video.onloadedmetadata = resolve;
                 });
                 await video.play();
+
+                mirrorCanvas.width = video.videoWidth;
+                mirrorCanvas.height = video.videoHeight;
 
                 async function loop() {
                     if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {

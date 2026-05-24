@@ -95,7 +95,7 @@ impl EyeGestures {
         let scale_y = height / self.start_height;
 
         if self.head_start == [0.0, 0.0] {
-            self.head_start = [offset_x * scale_x, offset_y * scale_y];
+            self.head_start = [offset_x * scale_x, offset_y * scale_x];
         }
 
         let to_coords = |indices: &[usize]| -> Vec<[f64; 2]> {
@@ -115,7 +115,7 @@ impl EyeGestures {
         keypoints.extend([scale_x, scale_y, width, height]);
         keypoints.extend([
             offset_x * scale_x - self.head_start[0],
-            offset_y * scale_y - self.head_start[1],
+            offset_y * scale_x - self.head_start[1],
         ]);
 
         self.last_keypoints = keypoints.clone();
@@ -139,6 +139,7 @@ impl EyeGestures {
             if dist < 0.1 * self.screen_width && self.frames_on_point > 20 {
                 self.calibrator.next_point();
                 self.frames_on_point = 0;
+                self.buffer.clear();
             } else if dist < 0.1 * self.screen_width {
                 self.frames_on_point += 1;
             }
