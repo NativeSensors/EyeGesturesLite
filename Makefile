@@ -3,14 +3,15 @@
 MINIFY = npx terser
 MINIFY_FLAGS = --compress --mangle
 
-SRC = src/calibration.js src/eyegestures.js
+SRC = src/eyegestures.js
 MIN = $(SRC:.js=.min.js)
 
 min:
-	$(MINIFY) $(SRC) $(MINIFY_FLAGS) -o src/eyegestures.min.js
+	$(MINIFY) $(SRC) $(MINIFY_FLAGS) -o engine/pkg/eyegestures.min.js
 
 wasm:
-	cd ./rust_eyegestures && wasm-pack build --target web
+	cd ./engine && wasm-pack build --target web
+	$(MINIFY) $(SRC) $(MINIFY_FLAGS) -o engine/pkg/eyegestures.min.js
 
 clean:
 	rm -f src/eyegestures.min.js
