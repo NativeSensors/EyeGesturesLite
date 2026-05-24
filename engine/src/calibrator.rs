@@ -130,7 +130,7 @@ impl Calibrator {
         self.tmp_x.push_back(keypoints);
         self.tmp_y.push_back(target);
 
-        if self.tmp_x.len() > 20 {
+        if self.tmp_x.len() > 40 {
             self.tmp_x.pop_front();
             self.tmp_y.pop_front();
         }
