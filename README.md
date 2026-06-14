@@ -11,6 +11,11 @@
     <img src="https://raw.githubusercontent.com/pedromxavier/flag-badges/main/badges/PL.svg" alt="made in PL">
 </a>
 
+> ⚠️ **Warning:** EyeGestures Lite is merging with main repository.
+> Soon this repository will become archived. All algorithms can be found at https://github.com/NativeSensors/EyeGestures
+> EyeGesturesLite will be available same as previousy through link `<script src="https://eyegestures.com/eyegestures.js"></script>`,
+> but source code will be stored at main repository.
+
 EyeGestures is open source eyetracking software/library using native webcams and phone camers for achieving its goal. The aim of library is to bring accessibility of eye-tracking and eye-driven interfaces without requirement of obtaining expensive hardware.
 
 Our [Mission](https://github.com/NativeSensors/EyeGestures/blob/main/MISSION.md)! 
